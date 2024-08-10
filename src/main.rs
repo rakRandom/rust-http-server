@@ -1,13 +1,23 @@
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream}
 };
+use chrono;
 
 fn handle_connection(mut stream: TcpStream) {
     //
-    let buf_reader = BufReader::new(&mut stream);
-    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
+
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    let request_line: String = http_request[0].clone();
+
+    println!("Request {:?}: {http_request:#?}\r\n", chrono::offset::Local::now());
 
     //
     let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
@@ -20,12 +30,12 @@ fn handle_connection(mut stream: TcpStream) {
     let contents: String = fs::read_to_string(filename).unwrap();
     let length: usize = contents.len();
 
-    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+    let response: String = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
 
     //
     stream.write_all(response.as_bytes()).unwrap();
 
-    println!("Response: {response}");
+    println!("Response: {response}\r\n\r\n");
 }
 
 fn main() {
