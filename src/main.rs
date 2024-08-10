@@ -1,10 +1,25 @@
+use cli_file_transfer::ThreadPool;
+use chrono;
 use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream}
 };
-use chrono;
-use cli_file_transfer::ThreadPool;
+
+fn main() {
+    let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
+    let pool: ThreadPool = ThreadPool::new(4);
+    
+    for stream in listener.incoming() {
+        let stream: TcpStream = stream.unwrap();
+
+        pool.execute(|| {
+            handle_connection(stream);
+        });
+    }
+
+    println!("Shutting down");
+}
 
 fn handle_connection(mut stream: TcpStream) {
     //
@@ -31,23 +46,11 @@ fn handle_connection(mut stream: TcpStream) {
     let contents: String = fs::read_to_string(filename).unwrap();
     let length: usize = contents.len();
 
-    let response: String = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+    let response: String = 
+    format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
 
     //
     stream.write_all(response.as_bytes()).unwrap();
 
     println!("Response: {response}\r\n\r\n");
-}
-
-fn main() {
-    let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
-    let pool: ThreadPool = ThreadPool::new(4);
-
-    for stream in listener.incoming() {
-        let stream: TcpStream = stream.unwrap();
-
-        pool.execute(|| {
-            handle_connection(stream);
-        });
-    }
 }
