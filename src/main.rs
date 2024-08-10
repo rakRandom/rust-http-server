@@ -1,7 +1,8 @@
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream}
+    net::{TcpListener, TcpStream},
+    thread,
 };
 use chrono;
 
@@ -44,6 +45,8 @@ fn main() {
     for stream in listener.incoming() {
         let stream: TcpStream = stream.unwrap();
 
-        handle_connection(stream);
+        thread::spawn(|| {
+            handle_connection(stream);
+        });
     }
 }
