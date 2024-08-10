@@ -3,7 +3,7 @@ use chrono;
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream}
+    net::{TcpListener, TcpStream},
 };
 
 fn main() {
@@ -12,7 +12,6 @@ fn main() {
     
     for stream in listener.incoming() {
         let stream: TcpStream = stream.unwrap();
-
         pool.execute(|| {
             handle_connection(stream);
         });

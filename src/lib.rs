@@ -15,28 +15,6 @@ struct Worker {
     work: Option<thread::JoinHandle<()>>,
 }
 
-impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        let work: thread::JoinHandle<()> = thread::spawn(move || loop {
-            let message: Result<Box<dyn FnOnce() + Send>, mpsc::RecvError> = 
-                receiver.lock().unwrap().recv();
-
-            match message {
-                Ok(job) => job(),
-                Err(_) => {
-                    println!("Worker {id} disconnected");
-                    break;
-                }
-            }
-        });
-
-        Worker { 
-            id, 
-            work: Some(work), 
-        }
-    }
-}
-
 impl ThreadPool {
     /// Create a new ThreadPool.
     ///
@@ -87,6 +65,28 @@ impl Drop for ThreadPool {
             if let Some(thread) = worker.work.take() {
                 thread.join().unwrap();
             }
+        }
+    }
+}
+
+impl Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+        let work: thread::JoinHandle<()> = thread::spawn(move || loop {
+            let message: Result<Box<dyn FnOnce() + Send>, mpsc::RecvError> = 
+                receiver.lock().unwrap().recv();
+
+            match message {
+                Ok(job) => job(),
+                Err(_) => {
+                    println!("Worker {id} disconnected");
+                    break;
+                }
+            }
+        });
+
+        Worker { 
+            id, 
+            work: Some(work), 
         }
     }
 }
