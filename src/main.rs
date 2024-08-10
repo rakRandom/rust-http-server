@@ -6,6 +6,11 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
+#[macro_export]
+macro_rules! path_to {
+    ($x:expr) => { format!("static/{}", $x) };
+}
+
 fn main() {
     let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
     let pool: ThreadPool = ThreadPool::new(4);
@@ -58,7 +63,7 @@ fn handle_connection(mut stream: TcpStream) {
 fn send_file(mut stream: TcpStream, filename: &str) {
     let response: String;
 
-    match fs::read(format!("static/{filename}")) {
+    match fs::read(path_to!(filename)) {
         Ok(buf_content) => {
             let length: usize = buf_content.len();
 
@@ -80,7 +85,7 @@ fn send_file(mut stream: TcpStream, filename: &str) {
 fn render_template(mut stream: TcpStream, filename: &str) {
     // Parsing response
     let status_line = "HTTP/1.1 200 OK";
-    let contents: String = fs::read_to_string(format!("static/{filename}")).unwrap();
+    let contents: String = fs::read_to_string(path_to!(filename)).unwrap();
     let length: usize = contents.len();
 
     let response: String = format!(
