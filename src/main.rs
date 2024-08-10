@@ -1,10 +1,10 @@
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
-    thread,
+    net::{TcpListener, TcpStream}
 };
 use chrono;
+use cli_file_transfer::ThreadPool;
 
 fn handle_connection(mut stream: TcpStream) {
     //
@@ -41,11 +41,12 @@ fn handle_connection(mut stream: TcpStream) {
 
 fn main() {
     let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
+    let pool: ThreadPool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
         let stream: TcpStream = stream.unwrap();
 
-        thread::spawn(|| {
+        pool.execute(|| {
             handle_connection(stream);
         });
     }
