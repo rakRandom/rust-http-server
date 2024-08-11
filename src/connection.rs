@@ -16,21 +16,14 @@ macro_rules! path_to {
 
 // ==================== Handler ====================
 
-pub fn handle_connection(mut stream: TcpStream) {
+pub fn handle_connection(stream: TcpStream) {
     // Getting http request body
-    let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
-
-    let http_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
-
-    if http_request.len() == 0 { return; }  // No body request error
-
+    let (http_request, stream) = 
+    match get_request_body(stream) {
+        None => return,
+        Some(value) => {value}
+    };
     let request_line: String = http_request[0].clone();
-
-    println!("Request {:?}: {http_request:#?}\r\n", chrono::offset::Local::now());
 
     // Parsing request
     let temp: Vec<&str> = request_line.split(' ').collect::<Vec<_>>();
@@ -53,6 +46,22 @@ pub fn handle_connection(mut stream: TcpStream) {
 
 
 // ==================== Methods ====================
+
+fn get_request_body(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
+    let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
+
+    let http_request: Vec<String> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    if http_request.len() == 0 { return None; }  // No body request error
+
+    println!("Request {:?}: {http_request:#?}\r\n", chrono::offset::Local::now());
+
+    Some((http_request, stream))
+}
 
 fn send_file(mut stream: TcpStream, filename: &str) {
     let response: String;
