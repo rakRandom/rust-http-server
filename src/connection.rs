@@ -50,7 +50,7 @@ pub fn handle_connection(stream: TcpStream) {
 
     let path: &str = temp[1];
 
-    
+
     // ===== Routing the request =====
 
     // If the path is the root, send the index.html
@@ -68,19 +68,23 @@ pub fn handle_connection(stream: TcpStream) {
             return;
         }
         let filename: &str = subpath[0];
-        let args: Vec<&str> = subpath[1].split('&').collect();
+        let args: Vec<(&str, &str)> = match parse_args(subpath[1]) {
+            Some(value) => value,
+            None => {
+                render_404(stream);
+                return;
+            }
+        };
 
         // Verifying if the password was passed as a parameter
-        // Todo: Improve later, maybe turn it into a generic function to parse args
-        // Note: This isn't safe, the url can be /file/a.txt?p=0&p=1&p=2&p=... and break the system
-        let mut exit: bool = true;
-        for arg in args {
-            if arg == "p=1234" {  // Change the password
-                exit = false; 
-                break;
+        let password = match get_arg(args, "p") {
+            Some(value) => value,
+            None => {
+                render_404(stream);
+                return;
             }
-        }
-        if exit {
+        };
+        if password != "1234" {  // IMPORTANT: Change the password and don't include it in any commit 
             render_404(stream);
             return;
         }
@@ -102,6 +106,40 @@ pub fn handle_connection(stream: TcpStream) {
 
 
 // ==================== Methods ====================
+
+fn parse_args(args: &str) -> Option<Vec<(&str, &str)>> {
+    let list: Vec<&str> = args.split('&').collect();
+    let length: usize = list.len();
+
+    if length == 0 { return None; }
+
+    let mut keys: Vec<&str> = Vec::new();
+    let mut new: Vec<(&str, &str)> = Vec::new();
+
+    for item in list {
+        let item: Vec<&str> = item.split('=').collect();
+        if item.len() != 2 {
+            continue;
+        }
+        let key: &str = item[0];
+        let value: &str = item[1];
+
+        if !keys.contains(&key) && !key.is_empty() && !value.is_empty() {
+            keys.push(key);
+            new.push((key, value));
+        }
+    }
+    Some(new)
+}
+
+fn get_arg(list: Vec<(&str, &str)>, name: &str) -> Option<String> {
+    for (key, value) in list {
+        if key == name {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
 
 fn get_request_body(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
     let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
