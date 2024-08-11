@@ -20,9 +20,12 @@ Access `http://<you_local_address>:7878` to see the index page
 
 ## Types of status code:
 
-200 OK: Success - The action was successfully received, understood, and accepted
+### 2xx: Success - The action was successfully received, understood, and accepted
+- 200 Ok
 
-404 NOT FOUND: Client Error - The request contains bad syntax or cannot be fulfilled
+### 4xx Client Error - The request contains bad syntax or cannot be fulfilled
+- 400 Bad Request
+- 404 Not Found
 
 ## Based on:
 
@@ -36,4 +39,4 @@ Access `http://<you_local_address>:7878` to see the index page
 
 ## Licence
 
-This project is currently under a [LICENSE](LICENSE)
+#### This project is currently under a [LICENSE](LICENSE)
