@@ -1,5 +1,7 @@
 mod thread_pool;
 mod connection;
+mod responses;
+mod macros;
 use crate::{ 
     thread_pool::ThreadPool, 
     connection::handle_connection
@@ -29,7 +31,7 @@ fn main() {
             Ok(stream) => stream,
             Err(_) => {continue;}
         };
-        
+
         pool.execute(|| {
             handle_connection(stream);
         });

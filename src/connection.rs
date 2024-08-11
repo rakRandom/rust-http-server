@@ -1,58 +1,41 @@
 use chrono;
 use std::{
-    fs,
     io::{prelude::*, BufReader},
     net::TcpStream,
 };
+use crate::responses::*;
 
 
-// ==================== Structs ====================
-
-struct StatusCode;
-
-impl StatusCode {
-    pub fn ok() -> &'static str {
-        "HTTP/1.1 200 OK"
-    }
-
-    pub fn not_found() -> &'static str {
-        "HTTP/1.1 404 NOT FOUND"
-    }
-}
-
-
-// ==================== Macros ====================
-
-#[macro_export]
-macro_rules! path_to {
-    ($x:expr) => { format!("static/{}", $x) };
-}
-
-
-// ==================== Handler ====================
+// ==================== Handlers ====================
 
 pub fn handle_connection(stream: TcpStream) {
     // ========== Getting http request body ==========
 
-    let (http_request, stream) = 
-    match get_request_body(stream) {
+    let (request_body, stream) = 
+    match get_request(stream) {
         None => return,
-        Some(value) => {value}
+        Some(value) => value
     };
-    let request_line: String = http_request[0].clone();
-
+    let request_line: String = request_body[0].clone();
 
     // ========== Parsing request ==========
 
-    // Getting path
-    let temp: Vec<&str> = request_line.split(' ').collect();
-    if temp.len() < 3 { return; }  // No request line error
+    // Getting path and Routing the request
+    match request_line.split(' ').collect::<Vec<&str>>().as_slice() {
+        [method, path, "HTTP/1.1"] => {
+            match *method {
+                "GET" => handle_get(stream, path),
+                "POST" => handle_post(stream, request_body),
+                // Bad request
+                &_ => send_bad_request(stream)
+            }
+        }, 
+        // Bad request
+        &[] | &[_] | &[_, _] | &[&_, _, _] | &[_, _, _, _, ..] => send_bad_request(stream)
+    };
+}
 
-    let path: &str = temp[1];
-
-
-    // ===== Routing the request =====
-
+fn handle_get(stream: TcpStream, path: &str) {
     // If the path is the root, send the index.html
     if path == "/" {
         render_template(stream, "index.html");
@@ -60,52 +43,61 @@ pub fn handle_connection(stream: TcpStream) {
 
     // If the path is to the endpoint "file" and the password is correct, send the requested file
     else if path.starts_with("/file/") {
-        //
+        // Getting the subpath
         let subpath: Vec<&str> = (&path[6..path.len()]).split('?').collect();
+        if subpath.len() < 2 { render_404(stream); return; }
 
-        if subpath.len() < 2 {
-            render_404(stream);
-            return;
-        }
         let filename: &str = subpath[0];
         let args: Vec<(&str, &str)> = match parse_args(subpath[1]) {
             Some(value) => value,
-            None => {
-                render_404(stream);
-                return;
-            }
+            None => { render_404(stream); return; }
         };
 
         // Verifying if the password was passed as a parameter
         let password = match get_arg(args, "p") {
             Some(value) => value,
-            None => {
-                render_404(stream);
-                return;
-            }
+            None => { render_404(stream); return; }
         };
         if password != "1234" {  // IMPORTANT: Change the password and don't include it in any commit 
-            render_404(stream);
-            return;
+            render_404(stream); return;
         }
 
         send_file(stream, filename);
     }
-
     // If is in the root but it is a file, render it
     else if path.contains('.') {
         let filename: &str = &path[1..path.len()];
         render_template(stream, filename);
     }
-
     // Else, render 404 page
     else {
         render_404(stream);
     }
 }
 
+fn handle_post(mut stream: TcpStream, request_body: Vec<String>) {
+    println!("{:#?}", request_body);
+    stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
+}
+
 
 // ==================== Methods ====================
+
+fn get_request(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
+    let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
+
+    let request_body: Vec<String> = buf_reader
+        .lines()
+        .map(|result| result.unwrap_or("".to_string()))
+        .take_while(|line| !line.is_empty())
+        .collect();
+    
+    if request_body.len() == 0 { return None; }  // No body request error
+
+    println!("Request {:?}: {request_body:#?}\r\n", chrono::offset::Local::now());
+    
+    Some((request_body, stream))
+}
 
 fn parse_args(args: &str) -> Option<Vec<(&str, &str)>> {
     let list: Vec<&str> = args.split('&').collect();
@@ -139,89 +131,4 @@ fn get_arg(list: Vec<(&str, &str)>, name: &str) -> Option<String> {
         }
     }
     None
-}
-
-fn get_request_body(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
-    let buf_reader: BufReader<&mut TcpStream> = BufReader::new(&mut stream);
-
-    let http_request: Vec<String> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
-
-    if http_request.len() == 0 { return None; }  // No body request error
-
-    println!("Request {:?}: {http_request:#?}\r\n", chrono::offset::Local::now());
-
-    Some((http_request, stream))
-}
-
-fn send_file(mut stream: TcpStream, filename: &str) {
-    match fs::read(path_to!(filename)) {
-        Ok(buf_content) => {
-            let length: usize = buf_content.len();
-
-            let response: String = format!("{}\r\n\
-                Content-Disposition: attachment; filename=\"{filename}\"\r\n\
-                Content-Type: text/plain\r\n\
-                Content-Length: {length}\r\n\r\n", 
-                StatusCode::ok());
-            
-            // Write
-            match stream.write_all(response.as_bytes()) {
-                Ok(_) => println!("Response: {response}\r\n\r\n"),
-                Err(_) => { 
-                    println!("Failed response\r\n\r\n");
-                    return;
-                },
-            };
-            let _ = stream.write_all(&buf_content);
-            let _ = stream.flush();
-        }, 
-        Err(_) => {
-            render_404(stream);
-        }
-    };
-}
-
-fn render_template(mut stream: TcpStream, filename: &str) {
-    // Parsing response
-    match fs::read_to_string(path_to!(filename)) {
-        Ok(content) => {
-            let length: usize = content.len();
-            let response: String = format!(
-                "{}\r\nContent-Length: {length}\r\n\r\n{content}",
-                StatusCode::ok()
-            );
-            // Sending response
-            match stream.write_all(response.as_bytes()) {
-                Ok(_) => println!("Response: {response}\r\n\r\n"),
-                Err(_) => println!("Failed response\r\n\r\n"),
-            };
-        },
-        Err(_) => {
-            render_404(stream);
-        }
-    };
-}
-
-fn render_404(mut stream: TcpStream) {
-    let length: usize;
-    let mut response: String = format!("{}\r\n", StatusCode::not_found());
-
-    match fs::read_to_string(path_to!("404.html")) {
-        Ok(content) => {
-            length = content.len();
-            response = format!("{response}Content-Length: {length}\r\n\r\n{content}");
-        },
-        Err(_) => {
-            response = format!("{response}\r\n404");
-        }
-    };
-
-    match stream.write_all(response.as_bytes()) {
-        Ok(_) => println!("Response: {response}\r\n\r\n"),
-        Err(_) => println!("Failed response\r\n\r\n"),
-    };
 }
