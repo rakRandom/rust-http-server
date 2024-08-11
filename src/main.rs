@@ -1,4 +1,6 @@
-use cli_file_transfer::ThreadPool;
+mod thread_pool;
+use crate::thread_pool::ThreadPool;
+
 use chrono;
 use std::{
     fs,
