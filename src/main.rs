@@ -13,11 +13,23 @@ use std::net::{
 // ==================== Main ====================
 
 fn main() {
-    let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
+    let listener: TcpListener = match TcpListener::bind("0.0.0.0:7878") {
+        Ok(listener) => listener,
+        Err(_) => {
+            println!("Failed bind to 0.0.0.0:7878");
+            return;
+        }
+    };
     let pool: ThreadPool = ThreadPool::new(4);
+
+    println!("Starting the server");
     
     for stream in listener.incoming() {
-        let stream: TcpStream = stream.unwrap();
+        let stream: TcpStream = match stream {
+            Ok(stream) => stream,
+            Err(_) => {continue;}
+        };
+        
         pool.execute(|| {
             handle_connection(stream);
         });
