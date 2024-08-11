@@ -3,7 +3,13 @@ use std::{
     thread,
 };
 
+
+// ==================== Types ====================
+
 type Job = Box<dyn FnOnce() + Send + 'static>;
+
+
+// ==================== Structs ====================
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -14,6 +20,9 @@ struct Worker {
     id: usize,
     work: Option<thread::JoinHandle<()>>,
 }
+
+
+// ==================== Impl(ementations) ====================
 
 impl ThreadPool {
     /// Create a new ThreadPool.

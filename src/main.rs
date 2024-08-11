@@ -9,6 +9,9 @@ use std::net::{
     TcpListener, TcpStream
 };
 
+
+// ==================== Main ====================
+
 fn main() {
     let listener: TcpListener = TcpListener::bind("0.0.0.0:7878").unwrap();
     let pool: ThreadPool = ThreadPool::new(4);

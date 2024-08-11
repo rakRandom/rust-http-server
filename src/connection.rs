@@ -5,10 +5,16 @@ use std::{
     net::TcpStream,
 };
 
+
+// ==================== Macros ====================
+
 #[macro_export]
 macro_rules! path_to {
     ($x:expr) => { format!("static/{}", $x) };
 }
+
+
+// ==================== Handler ====================
 
 pub fn handle_connection(mut stream: TcpStream) {
     // Getting http request body
@@ -44,6 +50,9 @@ pub fn handle_connection(mut stream: TcpStream) {
         });
     }
 }
+
+
+// ==================== Methods ====================
 
 fn send_file(mut stream: TcpStream, filename: &str) {
     let response: String;
