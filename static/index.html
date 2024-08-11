@@ -4,9 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Connection </title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <h1>Hello</h1>
-    <p>This was a successful connection</p>
+    <div class="w-[600px] mx-auto mt-16">
+        <div class="text-center w-fit mx-auto mb-4">
+            <h1 class="text-4xl font-semibold border-b">
+                Hello
+            </h1>
+            <p class="text-lg">
+                This was a successful connection
+            </p>
+        </div>
+        
+        <div class="flex flex-col gap-4 
+            *:block *:w-[380px] *:mx-auto *:p-2 *:border-2 *:rounded-md 
+            *:transition-all hover:*:indent-1
+            ">
+            <a href="file.txt">Download a file ;)</a>
+            <a href="404">Go to a 404 page</a>
+            <a href="a.txt">Try to download a file that doesn't exist</a>
+        </div>
+    </div>
 </body>
 </html>
