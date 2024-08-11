@@ -5,11 +5,9 @@ use std::{
     net::TcpStream,
 };
 
-
 // ==================== Structs ====================
 
 struct StatusCode;
-
 impl StatusCode {
     fn ok() -> &'static str {
         "HTTP/1.1 200 Ok"
@@ -23,7 +21,6 @@ impl StatusCode {
         "HTTP/1.1 400 Bad Request"
     }
 }
-
 
 // ==================== Methods ====================
 

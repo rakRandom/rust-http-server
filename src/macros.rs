@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! path_to {
     ($x:expr) => { format!("static/{}", $x) };

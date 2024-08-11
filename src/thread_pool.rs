@@ -3,11 +3,9 @@ use std::{
     thread,
 };
 
-
 // ==================== Types ====================
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
-
 
 // ==================== Structs ====================
 
@@ -21,26 +19,16 @@ struct Worker {
     work: Option<thread::JoinHandle<()>>,
 }
 
-
 // ==================== Impl(ementations) ====================
 
 impl ThreadPool {
-    /// Create a new ThreadPool.
-    ///
-    /// The size is the number of threads in the pool.
-    ///
-    /// # Panics
-    ///
-    /// The `new` function will panic if the size is zero.
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
 
         let (sender, receiver) = mpsc::channel();
-
         let receiver: Arc<Mutex<mpsc::Receiver<Job>>> = Arc::new(Mutex::new(receiver));
 
         let mut workers: Vec<Worker> = Vec::with_capacity(size);
-
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
@@ -93,9 +81,6 @@ impl Worker {
             }
         });
 
-        Worker { 
-            id, 
-            work: Some(work), 
-        }
+        Worker { id,  work: Some(work), }
     }
 }

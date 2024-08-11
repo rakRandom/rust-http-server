@@ -5,7 +5,6 @@ use std::{
 };
 use crate::responses::*;
 
-
 // ==================== Handlers ====================
 
 pub fn handle_connection(stream: TcpStream) {
@@ -80,7 +79,6 @@ fn handle_post(mut stream: TcpStream, request_body: Vec<String>) {
     stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
 }
 
-
 // ==================== Methods ====================
 
 fn get_request(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
@@ -101,8 +99,8 @@ fn get_request(mut stream: TcpStream) -> Option<(Vec<String>, TcpStream)> {
 
 fn parse_args(args: &str) -> Option<Vec<(&str, &str)>> {
     let list: Vec<&str> = args.split('&').collect();
+    
     let length: usize = list.len();
-
     if length == 0 { return None; }
 
     let mut keys: Vec<&str> = Vec::new();
@@ -110,9 +108,8 @@ fn parse_args(args: &str) -> Option<Vec<(&str, &str)>> {
 
     for item in list {
         let item: Vec<&str> = item.split('=').collect();
-        if item.len() != 2 {
-            continue;
-        }
+        if item.len() != 2 { continue; }
+
         let key: &str = item[0];
         let value: &str = item[1];
 
